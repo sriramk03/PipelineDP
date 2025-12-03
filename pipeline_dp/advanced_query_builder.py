@@ -981,66 +981,41 @@ class Query:
         return final_results
 
 
+class AggregationBuilder:
+    def __init__(self, data, group_by_key, group_by_spec):
+        self._data = data
+        self._group_by_key = group_by_key
+        self._group_by_spec = group_by_spec
+        self._aggregations = []
+
+    def count(self, output_column_name: str, spec: CountSpec) -> 'AggregationBuilder':
+        """Schedules the count aggregation."""
+        self._aggregations.append(("count", output_column_name, spec, {}))
+        return self
+
+    def build(self) -> Query:
+        """Builds the query."""
+        return Query(self._data, self._group_by_key, self._group_by_spec,
+                     self._aggregations)
+
+
+class GroupByBuilder:
+    def __init__(self, data):
+        self._data = data
+
+    def group_by(self, group_keys: ColumnNames,
+                 spec: GroupBySpec) -> 'AggregationBuilder':
+        """Specifies how to group the data."""
+        return AggregationBuilder(self._data, group_keys, spec)
+
+
 class QueryBuilder:
     """Builds DP queries."""
 
     def __init__(self):
         self._data = None
-        self._group_by_key = None
-        self._group_by_spec = None
-        self._aggregations = []
 
-    def from_(self, data, *args) -> 'QueryBuilder':
+    def from_(self, data, *args) -> 'GroupByBuilder':
+        """Specifies the data to be processed."""
         self._data = data
-        return self
-
-    def group_by(self, group_keys: ColumnNames,
-                 spec: GroupBySpec) -> 'QueryBuilder':
-        self._group_by_key = group_keys
-        self._group_by_spec = spec
-        return self
-
-    def count(self, output_column_name: str, spec: CountSpec) -> 'QueryBuilder':
-        self._aggregations.append(("count", output_column_name, spec, {}))
-        return self
-
-    def count_distinct(self, columns: ColumnNames, output_column_name: str,
-                       spec: CountDistinctSpec) -> 'QueryBuilder':
-        self._aggregations.append(("count_distinct", output_column_name, spec, {
-            'columns': columns
-        }))
-        return self
-
-    def sum(self, value_column_name: str, output_column_name: str,
-            spec: SumSpec) -> 'QueryBuilder':
-        self._aggregations.append(("sum", output_column_name, spec, {
-            'value_column': value_column_name
-        }))
-        return self
-
-    def mean(self, value_column_name: str, output_column_name: str,
-             spec: MeanSpec) -> 'QueryBuilder':
-        self._aggregations.append(("mean", output_column_name, spec, {
-            'value_column': value_column_name
-        }))
-        return self
-
-    def variance(self, value_column_name: str, output_column_name: str,
-                 spec: VarianceSpec) -> 'QueryBuilder':
-        self._aggregations.append(("variance", output_column_name, spec, {
-            'value_column': value_column_name
-        }))
-        return self
-
-    def quantiles(self, value_column_name: str, ranks: List[float],
-                  output_column_name: str,
-                  spec: QuantilesSpec) -> 'QueryBuilder':
-        self._aggregations.append(("quantiles", output_column_name, spec, {
-            'value_column': value_column_name,
-            'ranks': ranks
-        }))
-        return self
-
-    def build(self) -> Query:
-        return Query(self._data, self._group_by_key, self._group_by_spec,
-                     self._aggregations)
+        return GroupByBuilder(data)

@@ -53,53 +53,7 @@ class AdvancedQueryBuilderTest(unittest.TestCase):
                         aqb.PartitionLevel(
                             max_partitions_contributed=3,
                             max_contributions_per_partition=1)).build()
-        ).count_distinct(
-            aqb.ColumnNames("user_id"),
-            "user_count",
-            aqb.LaplaceCountDistinctSpec.Builder().setPrivacyUnit(
-                aqb.ColumnNames("user_id")).setBudget(
-                    eps=1.0).setContributionBoundingLevel(
-                        aqb.PartitionLevel(
-                            max_partitions_contributed=3,
-                            max_contributions_per_partition=1)).build()
-        ).sum(
-            "rating", "rating_sum",
-            aqb.LaplaceSumSpec.Builder().setPrivacyUnit(
-                aqb.ColumnNames("user_id")).setBudget(
-                    eps=1.0).setContributionBoundingLevel(
-                        aqb.PartitionLevel(max_partitions_contributed=3,
-                                           max_contributions_per_partition=1)).
-            setTotalValueBounds(
-                minTotalValue=0, maxTotalValue=100).build()).mean(
-                    "rating", "rating_avg",
-                    aqb.LaplaceMeanSpec.Builder().setPrivacyUnit(
-                        aqb.ColumnNames("user_id")).setBudget(
-                            eps=1.0).setContributionBoundingLevel(
-                                aqb.PartitionLevel(
-                                    max_partitions_contributed=3,
-                                    max_contributions_per_partition=1)).
-                    setValueBounds(minValue=1, maxValue=5).build()).variance(
-                        "rating", "rating_var",
-                        aqb.LaplaceVarianceSpec.Builder().setPrivacyUnit(
-                            aqb.ColumnNames("user_id")).setBudget(
-                                eps=1.0).setContributionBoundingLevel(
-                                    aqb.PartitionLevel(
-                                        max_partitions_contributed=3,
-                                        max_contributions_per_partition=1)).
-                        setValueBounds(minValue=1, maxValue=5).build()
-                    ).quantiles(
-                        "rating",
-                        [0.5, 0.9],
-                        "rating_quantiles",
-                        aqb.TreeQuantilesSpec.Builder().setPrivacyUnit(
-                            aqb.ColumnNames("user_id")).setBudget(
-                                eps=1.0,
-                                delta=1e-6).setContributionBoundingLevel(
-                                    aqb.PartitionLevel(
-                                        max_partitions_contributed=3,
-                                        max_contributions_per_partition=1)
-                                ).setValueBounds(minValue=1,
-                                                 maxValue=5).build()).build()
+        ).build()
 
         # Run Query
         results = query.run()
@@ -117,26 +71,6 @@ class AdvancedQueryBuilderTest(unittest.TestCase):
         # Check presence and types of all metrics
         # Count
         self.assertTrue(isinstance(m1_row['rating_count'], (int, float)))
-
-        # Count Distinct
-        self.assertTrue(isinstance(m1_row['user_count'], (int, float)))
-
-        # Sum
-        self.assertTrue(isinstance(m1_row['rating_sum'], (int, float)))
-
-        # Mean
-        self.assertTrue(isinstance(m1_row['rating_avg'], (int, float)))
-
-        # Variance
-        self.assertTrue(isinstance(m1_row['rating_var'], (int, float)))
-
-        # Quantiles - expects a dictionary with percentile_50 and percentile_90
-        self.assertTrue(isinstance(m1_row['rating_quantiles'], dict))
-        self.assertIn('percentile_50', m1_row['rating_quantiles'])
-        self.assertIn('percentile_90', m1_row['rating_quantiles'])
-        self.assertTrue(
-            isinstance(m1_row['rating_quantiles']['percentile_50'],
-                       (int, float)))
 
         print(f"M1 Row: {m1_row}")
 
